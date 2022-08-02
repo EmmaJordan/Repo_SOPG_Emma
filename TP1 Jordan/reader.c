@@ -27,15 +27,6 @@ int main(void)
     {
         printf("Error en la apertura del archivo\n");
     }
-    /*else
-    {
-        printf("\nIntroduce texto: \n");
-        while((caracter = getchar())!='\n')
-        {
-            printf("%c", fputc(caracter,fp));
-        }
-
-    }*/
 
     /* Create named fifo. -1 means already exists so no action if already exists */
     if ( (returnCode = mknod(FIFO_NAME, S_IFIFO | 0666, 0) ) < -1  ) //CREA LA COLA SI NO ESTÁ CREADA, NO LA ABRE
@@ -70,10 +61,13 @@ int main(void)
 			printf("reader: read %d bytes: \"%s\"\n", bytesRead, inputBuffer);
 			char caracter;
 			int i=0;
-			while((caracter = inputBuffer[i++])!='\n')
+			while(i<bytesRead)
             {
+                caracter = inputBuffer[i++];
                 printf("%c", fputc(caracter,fp));
             }
+            printf("\n");
+            fputc('\n',fp);
 		}
 	}
 	while (bytesRead > 0); //sale cuando bytesRead es igual a 0
