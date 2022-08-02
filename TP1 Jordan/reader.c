@@ -1,0 +1,82 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <string.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <stdint.h>
+
+#define FIFO_NAME "miColaNombrada" //Mismo nombre que en writer
+#define BUFFER_SIZE 300
+
+int main(void)
+{
+    printf("TP 1 - SOPG - Jordán\n");
+    printf("Soy el proceso LECTOR\n");
+
+	char inputBuffer[BUFFER_SIZE];
+	uint32_t bytesRead;
+	int32_t returnCode, fd;
+
+	//Archivos de texto
+	FILE *fp;
+    fp = fopen("archivo_TP1.txt","a+t");
+    if(fp==NULL)
+    {
+        printf("Error en la apertura del archivo\n");
+    }
+    /*else
+    {
+        printf("\nIntroduce texto: \n");
+        while((caracter = getchar())!='\n')
+        {
+            printf("%c", fputc(caracter,fp));
+        }
+
+    }*/
+
+    /* Create named fifo. -1 means already exists so no action if already exists */
+    if ( (returnCode = mknod(FIFO_NAME, S_IFIFO | 0666, 0) ) < -1  ) //CREA LA COLA SI NO ESTÁ CREADA, NO LA ABRE
+    {
+        printf("Error creando la Cola Nombrada: %d\n", returnCode);
+        exit(1);
+    }
+
+    /* Open named fifo. Blocks until other process opens it */
+	printf("Esperando escritores...\n");
+	if ( (fd = open(FIFO_NAME, O_RDONLY) ) < 0 ) //ABRIR SÓLO LECTURA
+    {
+        printf("Error abriendo la Cola Nombrada: %d\n", fd);
+        exit(1);
+    }
+
+    /* open syscalls returned without error -> other process attached to named fifo */
+	printf("Ya tengo un escritor\n");
+
+    /* Loop until read syscall returns a value <= 0 */
+	do
+	{
+        /* read data into local buffer */
+        // LEO DE LA COLA NOMBRADA
+		if ((bytesRead = read(fd, inputBuffer, BUFFER_SIZE)) == -1)
+        {
+			perror("read");
+        }
+        else
+		{
+			inputBuffer[bytesRead] = '\0';
+			printf("reader: read %d bytes: \"%s\"\n", bytesRead, inputBuffer);
+			char caracter;
+			int i=0;
+			while((caracter = inputBuffer[i++])!='\n')
+            {
+                printf("%c", fputc(caracter,fp));
+            }
+		}
+	}
+	while (bytesRead > 0); //sale cuando bytesRead es igual a 0
+
+	return 0;
+}
