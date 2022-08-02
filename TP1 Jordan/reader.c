@@ -22,7 +22,7 @@ int main(void)
 
 	//Archivos de texto
 	FILE *fp;
-    fp = fopen("archivo_TP1.txt","a+t");
+    fp = fopen("archivo_TP1_Jordan.txt","a+t");
     if(fp==NULL)
     {
         printf("Error en la apertura del archivo\n");
@@ -59,14 +59,12 @@ int main(void)
 		{
 			inputBuffer[bytesRead] = '\0';
 			printf("reader: read %d bytes: \"%s\"\n", bytesRead, inputBuffer);
-			char caracter;
-			int i=0;
-			while(i<bytesRead)
+			char miChar;
+			for(uint32_t i=0; i<bytesRead; i++)
             {
-                caracter = inputBuffer[i++];
-                printf("%c", fputc(caracter,fp));
+                miChar = inputBuffer[i];
+                fputc(miChar,fp);
             }
-            printf("\n");
             fputc('\n',fp);
 		}
 	}
