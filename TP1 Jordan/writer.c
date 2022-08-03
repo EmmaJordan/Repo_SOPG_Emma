@@ -32,10 +32,28 @@ void signalPIPE_Handler(int sig)
 	flagWriter = 1;
 }
 
+void signalSIGUSR1_Handler(int sig)
+{
+    write(1,"ESCRITOR: SIGUSR1!!\n",20);
+}
+
+void signalSIGUSR2_Handler(int sig)
+{
+    write(1,"ESCRITOR: SIGUSR2!!\n",20);
+}
+
+void configuraSIGPIPE( void );
+void configuraSISUSR1( void );
+void configuraSIGUSR2( void );
+void configuraSIGNALS( void );
+
 int main(void)
 {
     printf("TP 1 - SOPG - Jordán\n");
     printf("Soy el proceso ESCRITOR\n");
+
+    // --------- SEÑALES ---------- //
+    configuraSIGNALS();
 
     char outputBuffer[BUFFER_SIZE];
 	uint32_t bytesWrote;
@@ -59,25 +77,6 @@ int main(void)
     /* open syscalls returned without error -> other process attached to named fifo */
 	printf("Ya tengo un lector, escribí algo acá: \n");
 
-
-	// --------- SEÑALES ---------- //
-    struct sigaction sa;                    //Estructura para configuración de Handlers de Señales
-
-	/* Campos de la estructura */
-	sa.sa_handler = signalPIPE_Handler;     //Nombre del Handler
-	//sa.sa_flags = SA_RESTART;             //Flags de comportamiento de las syscalls interrumpidas
-	sa.sa_flags = 0;
-	//sa.sa_flags = SA_SIGINFO;
-
-	sigemptyset(&sa.sa_mask);
-	/* Función que configura el Handler mediante su estructura */
-	if (sigaction(SIGPIPE,&sa,NULL) == -1)     //(signal,&actual_struct, &older_struct)
-    {
-        perror("sigaction error\n");
-        exit(1);
-    }
-    //Como configuramos SIGPIPE, va a entrar al handler cuando se cierra el reader
-
     /* Loop forever */
 	while (flagWriter == 0)
 	{
@@ -97,4 +96,68 @@ int main(void)
 	}
 	printf("Escritor: me cierro\n");
 	return 0;
+}
+
+void configuraSIGPIPE( void )
+{
+    struct sigaction sa;                    //Estructura para configuración de Handlers de Señales
+
+	/* Campos de la estructura */
+	sa.sa_handler = signalPIPE_Handler;     //Nombre del Handler
+	//sa.sa_flags = SA_RESTART;             //Flags de comportamiento de las syscalls interrumpidas
+	sa.sa_flags = 0;
+	//sa.sa_flags = SA_SIGINFO;
+	sigemptyset(&sa.sa_mask);
+	/* Función que configura el Handler mediante su estructura */
+	if (sigaction(SIGPIPE,&sa,NULL) == -1)     //(signal,&actual_struct, &older_struct)
+    {
+        perror("sigaction error\n");
+        exit(1);
+    }
+    //Como configuramos SIGPIPE, va a entrar al handler cuando se cierra el reader
+}
+
+void configuraSIGUSR1( void )
+{
+    struct sigaction sa;                    //Estructura para configuración de Handlers de Señales
+
+    // ---- SIGPIPE
+	/* Campos de la estructura */
+	sa.sa_handler = signalSIGUSR1_Handler;     //Nombre del Handler
+	//sa.sa_flags = SA_RESTART;             //Flags de comportamiento de las syscalls interrumpidas
+	sa.sa_flags = 0;
+	//sa.sa_flags = SA_SIGINFO;
+	sigemptyset(&sa.sa_mask);
+	/* Función que configura el Handler mediante su estructura */
+	if (sigaction(SIGUSR1,&sa,NULL) == -1)     //(signal,&actual_struct, &older_struct)
+    {
+        perror("sigaction error\n");
+        exit(1);
+    }
+}
+
+void configuraSIGUSR2( void )
+{
+    struct sigaction sa;                    //Estructura para configuración de Handlers de Señales
+
+    // ---- SIGPIPE
+	/* Campos de la estructura */
+	sa.sa_handler = signalSIGUSR2_Handler;     //Nombre del Handler
+	//sa.sa_flags = SA_RESTART;             //Flags de comportamiento de las syscalls interrumpidas
+	sa.sa_flags = 0;
+	//sa.sa_flags = SA_SIGINFO;
+	sigemptyset(&sa.sa_mask);
+	/* Función que configura el Handler mediante su estructura */
+	if (sigaction(SIGUSR2,&sa,NULL) == -1)     //(signal,&actual_struct, &older_struct)
+    {
+        perror("sigaction error\n");
+        exit(1);
+    }
+}
+
+void configuraSIGNALS( void )
+{
+    configuraSIGPIPE();
+    configuraSIGUSR1();
+    configuraSIGUSR2();
 }
