@@ -59,6 +59,7 @@ int main(void)
 		{
 			inputBuffer[bytesRead] = '\0';
 			printf("reader: read %d bytes: \"%s\"\n", bytesRead, inputBuffer);
+			fputs("DATA:",fp);
 			char miChar;
 			for(uint32_t i=0; i<bytesRead; i++)
             {
@@ -69,6 +70,6 @@ int main(void)
 		}
 	}
 	while (bytesRead > 0); //sale cuando bytesRead es igual a 0
-
+	fclose(fp);
 	return 0;
 }

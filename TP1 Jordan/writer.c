@@ -7,9 +7,30 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <signal.h>
 
 #define FIFO_NAME "miColaNombrada"
 #define BUFFER_SIZE 300
+
+//Buena práctica utilizar un flag de este tipo de datos dentro del Handler
+volatile sig_atomic_t flagWriter;
+//int returnWriter = 0;
+
+void signalPIPE_Handler(int sig)
+{
+    //Buena práctica utilizar write en lugar de printf, es una función más segura,
+    //la de más bajo nivel para imprimir caracteres por consola
+    //Hay que indicarle el número de bytes exactos, incluído el \n.
+    //El primer parámetro 1 significa stdout
+	write(1,"ESCRITOR: SIGPIPE!! READER TERMINO!!\n",37);
+
+	//wait del padre para capturar el retorno del hijo cuando termina,
+	//para que no quede zombie
+	//wait(&returnWriter);
+
+	//flag seguro
+	flagWriter = 1;
+}
 
 int main(void)
 {
@@ -38,22 +59,42 @@ int main(void)
     /* open syscalls returned without error -> other process attached to named fifo */
 	printf("Ya tengo un lector, escribí algo acá: \n");
 
+
+	// --------- SEÑALES ---------- //
+    struct sigaction sa;                    //Estructura para configuración de Handlers de Señales
+
+	/* Campos de la estructura */
+	sa.sa_handler = signalPIPE_Handler;     //Nombre del Handler
+	//sa.sa_flags = SA_RESTART;             //Flags de comportamiento de las syscalls interrumpidas
+	sa.sa_flags = 0;
+	//sa.sa_flags = SA_SIGINFO;
+
+	sigemptyset(&sa.sa_mask);
+	/* Función que configura el Handler mediante su estructura */
+	if (sigaction(SIGPIPE,&sa,NULL) == -1)     //(signal,&actual_struct, &older_struct)
+    {
+        perror("sigaction error\n");
+        exit(1);
+    }
+    //Como configuramos SIGPIPE, va a entrar al handler cuando se cierra el reader
+
     /* Loop forever */
-	while (1)
+	while (flagWriter == 0)
 	{
         /* Get some text from console */
-		fgets(outputBuffer, BUFFER_SIZE, stdin);
-
+        fgets(outputBuffer, BUFFER_SIZE, stdin);
         /* Write buffer to named fifo. Strlen - 1 to avoid sending \n char */
 		// ESCRIBO EN LA COLA NOMBRADA
 		if ((bytesWrote = write(fd, outputBuffer, strlen(outputBuffer)-1)) == -1)
         {
-			perror("write");
+			perror("Escritor error: ");
+			break;
         }
         else
         {
 			printf("Escritor: escriste %d bytes\n", bytesWrote);
         }
 	}
+	printf("Escritor: me cierro\n");
 	return 0;
 }
