@@ -13,8 +13,7 @@
 #define BUFFER_SIZE 300
 
 //Buena práctica utilizar un flag de este tipo de datos dentro del Handler
-volatile sig_atomic_t flagWriter;
-//int returnWriter = 0;
+volatile sig_atomic_t flagPIPE, flagSIGUSR1, flagSIGUSR2;
 
 void signalPIPE_Handler(int sig)
 {
@@ -23,23 +22,19 @@ void signalPIPE_Handler(int sig)
     //Hay que indicarle el número de bytes exactos, incluído el \n.
     //El primer parámetro 1 significa stdout
 	write(1,"ESCRITOR: SIGPIPE!! READER TERMINO!!\n",37);
-
-	//wait del padre para capturar el retorno del hijo cuando termina,
-	//para que no quede zombie
-	//wait(&returnWriter);
-
-	//flag seguro
-	flagWriter = 1;
+	flagPIPE = 1;
 }
 
 void signalSIGUSR1_Handler(int sig)
 {
     write(1,"ESCRITOR: SIGUSR1!!\n",20);
+    flagSIGUSR1 = 1;
 }
 
 void signalSIGUSR2_Handler(int sig)
 {
     write(1,"ESCRITOR: SIGUSR2!!\n",20);
+    flagSIGUSR2 = 1;
 }
 
 void configuraSIGPIPE( void );
@@ -78,7 +73,8 @@ int main(void)
 	printf("Ya tengo un lector, escribí algo acá: \n");
 
     /* Loop forever */
-	while (flagWriter == 0)
+    flagPIPE = 0;
+	while (flagPIPE == 0)
 	{
         /* Get some text from console */
         fgets(outputBuffer, BUFFER_SIZE, stdin);
@@ -91,15 +87,32 @@ int main(void)
         }
         else
         {
-			printf("Escritor: escriste %d bytes\n", bytesWrote);
+			printf("Escribiste %d bytes\n", bytesWrote);
+        }
+        if(flagPIPE)
+        {
+            //flagPIPE = 0;
+            write(fd, "PIPE", 4);
+        }
+        if(flagSIGUSR1)
+        {
+            flagSIGUSR1 = 0;
+            write(fd, "SIGN:1", 7);
+        }
+        if(flagSIGUSR2)
+        {
+            flagSIGUSR2 = 0;
+            write(fd, "SIGN:2", 7);
         }
 	}
-	printf("Escritor: me cierro\n");
+
+	printf("Me cierro\n");
 	return 0;
 }
 
 void configuraSIGPIPE( void )
 {
+    flagPIPE = 0;
     struct sigaction sa;                    //Estructura para configuración de Handlers de Señales
 
 	/* Campos de la estructura */
@@ -119,6 +132,7 @@ void configuraSIGPIPE( void )
 
 void configuraSIGUSR1( void )
 {
+    flagSIGUSR1 = 0;
     struct sigaction sa;                    //Estructura para configuración de Handlers de Señales
 
     // ---- SIGPIPE
@@ -138,6 +152,7 @@ void configuraSIGUSR1( void )
 
 void configuraSIGUSR2( void )
 {
+    flagSIGUSR2 = 0;
     struct sigaction sa;                    //Estructura para configuración de Handlers de Señales
 
     // ---- SIGPIPE

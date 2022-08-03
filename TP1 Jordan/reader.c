@@ -22,7 +22,14 @@ int main(void)
 
 	//Archivos de texto
 	FILE *fp;
-    fp = fopen("archivo_TP1_Jordan.txt","a+t");
+    fp = fopen("log.txt","a+t");
+    if(fp==NULL)
+    {
+        printf("Error en la apertura del archivo\n");
+    }
+
+    FILE *fp2;
+    fp2 = fopen("signals.txt","a+t");
     if(fp==NULL)
     {
         printf("Error en la apertura del archivo\n");
@@ -71,5 +78,6 @@ int main(void)
 	}
 	while (bytesRead > 0); //sale cuando bytesRead es igual a 0
 	fclose(fp);
+	fclose(fp2);
 	return 0;
 }
