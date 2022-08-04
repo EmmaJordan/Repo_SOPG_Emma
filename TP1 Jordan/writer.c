@@ -51,6 +51,8 @@ int main(void)
     configuraSIGNALS();
 
     char outputBuffer[BUFFER_SIZE];
+    char dataBuffer[6] = "DATA:";
+    //char sigBuffer[6]  = "SIGN:";
 	uint32_t bytesWrote;
 	int32_t returnCode, fd;
 
@@ -80,9 +82,14 @@ int main(void)
         fgets(outputBuffer, BUFFER_SIZE, stdin);
         /* Write buffer to named fifo. Strlen - 1 to avoid sending \n char */
 		// ESCRIBO EN LA COLA NOMBRADA
+		if ((bytesWrote = write(fd, dataBuffer, strlen(dataBuffer))) == -1)
+        {
+			perror("Escritor error:");
+			break;
+        }
 		if ((bytesWrote = write(fd, outputBuffer, strlen(outputBuffer)-1)) == -1)
         {
-			perror("Escritor error: ");
+			perror("Escritor error:");
 			break;
         }
         else

@@ -21,18 +21,18 @@ int main(void)
 	int32_t returnCode, fd;
 
 	//Archivos de texto
-	FILE *fp;
-    fp = fopen("log.txt","a+t");
-    if(fp==NULL)
+	FILE *f_log;
+    f_log = fopen("log.txt","a+t");
+    if(f_log==NULL)
     {
-        printf("Error en la apertura del archivo\n");
+        printf("Error en la apertura del archivo log\n");
     }
 
-    FILE *fp2;
-    fp2 = fopen("signals.txt","a+t");
-    if(fp==NULL)
+    FILE *f_sig;
+    f_sig = fopen("signals.txt","a+t");
+    if(f_sig==NULL)
     {
-        printf("Error en la apertura del archivo\n");
+        printf("Error en la apertura del archivo sig\n");
     }
 
     /* Create named fifo. -1 means already exists so no action if already exists */
@@ -49,7 +49,6 @@ int main(void)
         printf("Error abriendo la Cola Nombrada: %d\n", fd);
         exit(1);
     }
-
     /* open syscalls returned without error -> other process attached to named fifo */
 	printf("Ya tengo un escritor\n");
 
@@ -57,7 +56,7 @@ int main(void)
 	do
 	{
         /* read data into local buffer */
-        // LEO DE LA COLA NOMBRADA
+        // LEO DE LA COLA NOMBRADA y guardo en inputBuffer
 		if ((bytesRead = read(fd, inputBuffer, BUFFER_SIZE)) == -1)
         {
 			perror("read");
@@ -66,18 +65,17 @@ int main(void)
 		{
 			inputBuffer[bytesRead] = '\0';
 			printf("reader: read %d bytes: \"%s\"\n", bytesRead, inputBuffer);
-			fputs("DATA:",fp);
 			char miChar;
 			for(uint32_t i=0; i<bytesRead; i++)
             {
                 miChar = inputBuffer[i];
-                fputc(miChar,fp);
+                fputc(miChar,f_log);
             }
-            fputc('\n',fp);
+            fputc('\n',f_log);
 		}
 	}
 	while (bytesRead > 0); //sale cuando bytesRead es igual a 0
-	fclose(fp);
-	fclose(fp2);
+	fclose(f_log);
+	fclose(f_sig);
 	return 0;
 }
