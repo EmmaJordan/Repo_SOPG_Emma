@@ -66,12 +66,24 @@ int main(void)
 			inputBuffer[bytesRead] = '\0';
 			printf("reader: read %d bytes: \"%s\"\n", bytesRead, inputBuffer);
 			char miChar;
-			for(uint32_t i=0; i<bytesRead; i++)
-            {
-                miChar = inputBuffer[i];
-                fputc(miChar,f_log);
-            }
+			if(inputBuffer[0]=='D')
+			{
+                for(uint32_t i=0; i<bytesRead; i++)
+                {
+                    miChar = inputBuffer[i];
+                    fputc(miChar,f_log);
+                }
+			}
+			else if(inputBuffer[0]=='S')
+			{
+                for(uint32_t i=0; i<bytesRead; i++)
+                {
+                    miChar = inputBuffer[i];
+                    fputc(miChar,f_sig);
+                }
+			}
             fputc('\n',f_log);
+            fputc('\n',f_sig);
 		}
 	}
 	while (bytesRead > 0); //sale cuando bytesRead es igual a 0

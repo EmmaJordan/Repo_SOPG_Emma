@@ -13,7 +13,7 @@
 #define BUFFER_SIZE 300
 
 //Buena práctica utilizar un flag de este tipo de datos dentro del Handler
-volatile sig_atomic_t flagPIPE, flagSIGUSR1, flagSIGUSR2;
+volatile sig_atomic_t flagPIPE, flagSIGUSR1, flagSIGUSR2, flagSIGNALS;
 
 void signalPIPE_Handler(int sig)
 {
@@ -27,13 +27,15 @@ void signalPIPE_Handler(int sig)
 
 void signalSIGUSR1_Handler(int sig)
 {
-    write(1,"ESCRITOR: SIGUSR1!!\n",20);
+    //write(1,"ESCRITOR: SIGUSR1!!\n",20);
+    flagSIGNALS = 1;
     flagSIGUSR1 = 1;
 }
 
 void signalSIGUSR2_Handler(int sig)
 {
-    write(1,"ESCRITOR: SIGUSR2!!\n",20);
+    //write(1,"ESCRITOR: SIGUSR2!!\n",20);
+    flagSIGNALS = 1;
     flagSIGUSR2 = 1;
 }
 
@@ -52,7 +54,7 @@ int main(void)
 
     char outputBuffer[BUFFER_SIZE];
     char dataBuffer[6] = "DATA:";
-    //char sigBuffer[6]  = "SIGN:";
+    char sigBuffer [7] = "SIGN:?";
 	uint32_t bytesWrote;
 	int32_t returnCode, fd;
 
@@ -79,37 +81,70 @@ int main(void)
 	while (flagPIPE == 0)
 	{
         /* Get some text from console */
-        fgets(outputBuffer, BUFFER_SIZE, stdin);
-        /* Write buffer to named fifo. Strlen - 1 to avoid sending \n char */
-		// ESCRIBO EN LA COLA NOMBRADA
-		if ((bytesWrote = write(fd, dataBuffer, strlen(dataBuffer))) == -1)
+        flagSIGNALS = 0;
+        while(flagSIGNALS==0)
         {
-			perror("Escritor error:");
-			break;
+            fgets(outputBuffer, BUFFER_SIZE, stdin);
+            break;
         }
-		if ((bytesWrote = write(fd, outputBuffer, strlen(outputBuffer)-1)) == -1)
-        {
-			perror("Escritor error:");
-			break;
+
+        /* Write buffer to named fifo. Strlen - 1 to avoid sending \n char */
+		if(flagSIGNALS==0)
+		{
+            // ESCRIBO EN LA COLA NOMBRADA
+            if ((bytesWrote = write(fd, dataBuffer, strlen(dataBuffer))) == -1)
+            {
+                perror("Escritor error:");
+                break;
+            }
+            if ((bytesWrote = write(fd, outputBuffer, strlen(outputBuffer)-1)) == -1)
+            {
+                perror("Escritor error:");
+                break;
+            }
+            else
+            {
+                printf("Escribiste %d bytes\n", bytesWrote);
+            }
         }
         else
         {
-			printf("Escribiste %d bytes\n", bytesWrote);
-        }
-        if(flagPIPE)
-        {
-            //flagPIPE = 0;
-            write(fd, "PIPE", 4);
-        }
-        if(flagSIGUSR1)
-        {
-            flagSIGUSR1 = 0;
-            write(fd, "SIGN:1", 7);
-        }
-        if(flagSIGUSR2)
-        {
-            flagSIGUSR2 = 0;
-            write(fd, "SIGN:2", 7);
+            flagSIGNALS = 0;
+            if(flagPIPE)
+            {
+                //flagPIPE = 0;
+                write(fd, "PIPE", 4);
+            }
+            if(flagSIGUSR1)
+            {
+                flagSIGUSR1 = 0;
+                sigBuffer[5] = '1';
+                if ((bytesWrote = write(fd, sigBuffer, strlen(sigBuffer))) == -1)
+                {
+                    perror("Escritor error:");
+                    break;
+                }
+                else
+                {
+                    printf("Escribiste %d bytes\n", bytesWrote);
+                }
+                //write(fd, "SIGN:1", 7);
+            }
+            if(flagSIGUSR2)
+            {
+                flagSIGUSR2 = 0;
+                sigBuffer[5] = '2';
+                if ((bytesWrote = write(fd, sigBuffer, strlen(sigBuffer))) == -1)
+                {
+                    perror("Escritor error:");
+                    break;
+                }
+                else
+                {
+                    printf("Escribiste %d bytes\n", bytesWrote);
+                }
+                //write(fd, "SIGN:2", 7);
+            }
         }
 	}
 
