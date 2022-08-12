@@ -22,6 +22,7 @@ void signalPIPE_Handler(int sig)
     //Hay que indicarle el número de bytes exactos, incluído el \n.
     //El primer parámetro 1 significa stdout
 	write(1,"ESCRITOR: SIGPIPE!! READER TERMINO!!\n",37);
+	flagSIGNALS = 1;
 	flagPIPE = 1;
 }
 
@@ -46,11 +47,13 @@ void configuraSIGNALS( void );
 
 int main(void)
 {
-    printf("TP 1 - SOPG - Jordán\n");
-    printf("Soy el proceso ESCRITOR\n");
+
 
     // --------- SEÑALES ---------- //
     configuraSIGNALS();
+
+    printf("TP 1 - SOPG - Jordán\n");
+    printf("Soy el proceso ESCRITOR\n");
 
     char outputBuffer[BUFFER_SIZE];
     char dataBuffer[6] = "DATA:";
@@ -82,9 +85,11 @@ int main(void)
 	{
         /* Get some text from console */
         flagSIGNALS = 0;
-        while(flagSIGNALS==0)
+        int fgetsOK = -2;
+        while(flagSIGNALS==0 && fgetsOK == -2)
         {
             fgets(outputBuffer, BUFFER_SIZE, stdin);
+            //printf("fgetsOK = %d\n",fgetsOK);
             break;
         }
 
