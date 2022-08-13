@@ -1,0 +1,17 @@
+# depslib dependency file v1.0
+1652889931 source:/home/emmanuel/Escritorio/SOPG/Repo_SOPG/Repo_SOPG_Emma/Tp_Final_Jordan/SerialService/SerialManager.c
+	"SerialManager.h"
+	<stdio.h>
+	<sys/types.h>
+	<sys/socket.h>
+	<stdlib.h>
+	<unistd.h>
+	<errno.h>
+	<string.h>
+	<netinet/in.h>
+	<arpa/inet.h>
+	<netdb.h>
+	<fcntl.h>
+
+1527537360 /home/emmanuel/Escritorio/SOPG/Repo_SOPG/Repo_SOPG_Emma/Tp_Final_Jordan/SerialService/SerialManager.h
+
