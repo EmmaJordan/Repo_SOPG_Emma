@@ -57,8 +57,7 @@ int main(void)
         cantBytes = serial_receive(bufferRx,size);
         if(cantBytes>0 && cantBytes<255)
         {
-            printf("Recibí %d bytes\r\n",cantBytes);
-            printf("Recibí: %s\r\n",bufferRx);
+            printf("Recibí %d bytes: %s\r\n",cantBytes, bufferRx);
         }
         sleep(1);
 	}
