@@ -16,7 +16,7 @@ void SIGINT_Handler(int sig)
     //la de más bajo nivel para imprimir caracteres por consola
     //Hay que indicarle el número de bytes exactos, incluído el \n.
     //El primer parámetro 1 significa stdout
-	write(1,"SIGINT!!\n",9);
+	write(1,"SIGINT!!\n",9); //Aviso por terminal
 	flagSIGINT = 1;
 }
 
