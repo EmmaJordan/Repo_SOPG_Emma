@@ -18,8 +18,9 @@
 #define size 128
 
 //Buena práctica utilizar un flag de este tipo de datos dentro del Handler
-volatile sig_atomic_t flagSIGINT = 0;
-volatile sig_atomic_t flagMain   = 0;
+volatile sig_atomic_t flagSIGINT  = 0;
+volatile sig_atomic_t flagSIGTERM = 0;
+volatile sig_atomic_t flagMain    = 0;
 
 void SIGINT_Handler(int sig)
 {
@@ -31,8 +32,15 @@ void SIGINT_Handler(int sig)
 	flagSIGINT = 1;
 }
 
+void SIGTERM_Handler(int sig)
+{
+	write(1,"\nSIGTERM detected!!\n",20); //Aviso por terminal
+	flagSIGTERM = 1;
+}
+
 
 void configuraSIGINT    ( void );
+void configuraSIGTERM   ( void );
 void configuraSIGNALS   ( void );
 void bloquearSIGNALS    ( void );
 void desbloquearSIGNALS ( void );
@@ -96,6 +104,7 @@ void* TCP_thread ( void* )
         exit(1);
     }
 
+    //setsockopt(fd_listen, SO_REUSEADDR); ¿?
 	// Abrimos puerto con bind(),
 	// Establece la DIRECCIÓN LOCAL del socket (IP+PUERTO)
 	// para saber a qué socket establecer dirección, se le envía su fd
@@ -181,7 +190,7 @@ int main(void)
 
     desbloquearSIGNALS();  //Desbloqueo señales después de crear hilos
 
-    while(flagSIGINT==0)
+    while(flagSIGINT==0 && flagSIGTERM==0)
     {
         sleep(0.1);
     }
@@ -219,9 +228,30 @@ void configuraSIGINT( void )
     //Como configuramos SIGINT, va a entrar al handler cuando se envía Ctrl+C
 }
 
+void configuraSIGTERM( void )
+{
+    flagSIGTERM = 0;
+    struct sigaction sa;                    //Estructura para configuración de Handlers de Señales
+
+	/* Campos de la estructura */
+	sa.sa_handler = SIGTERM_Handler;     //Nombre del Handler
+	//sa.sa_flags = SA_RESTART;             //Flags de comportamiento de las syscalls interrumpidas
+	sa.sa_flags = 0;
+	//sa.sa_flags = SA_SIGINFO;
+	sigemptyset(&sa.sa_mask);
+	/* Función que configura el Handler mediante su estructura */
+	if (sigaction(SIGTERM,&sa,NULL) == -1)     //(signal,&actual_struct, &older_struct)
+    {
+        perror("sigaction error\n");
+        exit(1);
+    }
+    //Como configuramos SIGTERM, va a entrar al handler cuando se envía Ctrl+C
+}
+
 void configuraSIGNALS( void )
 {
     configuraSIGINT();
+    configuraSIGTERM();
 }
 
 void bloquearSIGNALS()
