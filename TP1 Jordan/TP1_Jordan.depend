@@ -1,0 +1,24 @@
+# depslib dependency file v1.0
+1659646424 source:/home/emmanuel/Escritorio/SOPG/Repo_SOPG/Repo_SOPG_Emma/TP1 Jordan/reader.c
+	<stdio.h>
+	<stdlib.h>
+	<errno.h>
+	<string.h>
+	<fcntl.h>
+	<sys/types.h>
+	<sys/stat.h>
+	<unistd.h>
+	<stdint.h>
+
+1660690280 source:/home/emmanuel/Escritorio/SOPG/Repo_SOPG/Repo_SOPG_Emma/TP1 Jordan/writer.c
+	<stdio.h>
+	<stdlib.h>
+	<errno.h>
+	<string.h>
+	<fcntl.h>
+	<sys/types.h>
+	<sys/stat.h>
+	<unistd.h>
+	<stdint.h>
+	<signal.h>
+

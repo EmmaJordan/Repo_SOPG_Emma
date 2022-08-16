@@ -47,9 +47,7 @@ void configuraSIGNALS( void );
 
 int main(void)
 {
-
-
-    // --------- SEÑALES ---------- //
+    // ------- SEÑALES ---------- //
     configuraSIGNALS();
 
     printf("TP 1 - SOPG - Jordán\n");
@@ -85,11 +83,15 @@ int main(void)
 	{
         /* Get some text from console */
         flagSIGNALS = 0;
-        int fgetsOK = -2;
-        while(flagSIGNALS==0 && fgetsOK == -2)
+        while(flagSIGNALS==0)
         {
             fgets(outputBuffer, BUFFER_SIZE, stdin);
-            //printf("fgetsOK = %d\n",fgetsOK);
+            if ( outputBuffer[0] == -1)
+            {
+                perror("Writer: Error en fgets");
+                return -1;
+            }
+            //printf("Writer: fgetsOK = %d\n",fgetsOK);
             break;
         }
 
