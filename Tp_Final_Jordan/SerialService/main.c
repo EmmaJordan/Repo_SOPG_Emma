@@ -16,6 +16,8 @@
 
 #define size 128
 
+char bufferRx[size];
+
 typedef struct
 {
     char buffer[size]; //COMPARTIDO EN AMBOS HILOS
@@ -38,19 +40,20 @@ void* serial_thread ( void* )
 
     while(flagMain==0)
     {
-        pthread_mutex_lock(&mutexData);
-        cantBytes = serial_receive(data.buffer,size);
+        //pthread_mutex_lock(&mutexData);
+        cantBytes = serial_receive(bufferRx,size);
+        //cantBytes = serial_receive(data.buffer,sizeof(data.buffer));
         if(cantBytes>0 && cantBytes<255)
         {
-            printf("Recibí %d bytes: %s\r\n",cantBytes, data.buffer);
+            printf("Serial: recibí %d bytes: %s\r\n",cantBytes, bufferRx);
             // Enviamos mensaje a cliente
-            if (write (fd_com, data.buffer, sizeof(data.buffer)) == -1)
+            if (write (fd_com, bufferRx, sizeof(bufferRx)) == -1)
             {
                 perror("Serial: error escribiendo mensaje en socket");
                 exit (1);
             }
-            pthread_mutex_unlock(&mutexData);
         }
+        //pthread_mutex_unlock(&mutexData);
         sleep(0.1);
     }
     printf("Serial: cierro el puerto serie\r\n");
