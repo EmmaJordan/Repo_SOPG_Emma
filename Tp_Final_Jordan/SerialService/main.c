@@ -13,6 +13,7 @@
 
 //Buena práctica utilizar un flag de este tipo de datos dentro del Handler
 volatile sig_atomic_t flagSIGINT = 0;
+volatile sig_atomic_t flagMain   = 0;
 
 void SIGINT_Handler(int sig)
 {
@@ -20,23 +21,25 @@ void SIGINT_Handler(int sig)
     //la de más bajo nivel para imprimir caracteres por consola
     //Hay que indicarle el número de bytes exactos, incluído el \n.
     //El primer parámetro 1 significa stdout
-	write(1,"SIGINT!!\n",9); //Aviso por terminal
+	write(1,"\nCtrl+C detected!!\n",19); //Aviso por terminal
 	flagSIGINT = 1;
 }
 
 
-void configuraSIGINT ( void );
-void configuraSIGNALS( void );
+void configuraSIGINT    ( void );
+void configuraSIGNALS   ( void );
+void bloquearSIGNALS    ( void );
+void desbloquearSIGNALS ( void );
 
 char bufferRx[size];
 int cantBytes;
 void* serial_thread ( void* )
 {
-    while(flagSIGINT==0)
+    while(flagMain==0)
     {
         cantBytes = serial_receive(bufferRx,size);
         if(cantBytes>0 && cantBytes<255)
-        {
+        {flagSIGINT
             printf("Recibí %d bytes: %s\r\n",cantBytes, bufferRx);
         }
         sleep(0.1);
@@ -46,9 +49,9 @@ void* serial_thread ( void* )
 
 void* TCP_thread ( void* )
 {
-    int cont = 0;
+    /*int cont = 0;
     char bufferTx[size];
-    while(flagSIGINT==0)
+    while(flagMain==0)
     {
         int recibiPaqueteTCP = 0;
         if(recibiPaqueteTCP==1)
@@ -62,8 +65,9 @@ void* TCP_thread ( void* )
             serial_send(bufferTx,strlen(bufferTx));
         }
         //printf("Hilo TCP %d\r\n",cont++);
-        sleep(0.1);
-    }
+
+    }*/
+    sleep(0.1);
     return NULL;
 }
 
@@ -72,16 +76,25 @@ int main(void)
     printf("Inicio Serial Service\r\n");
 
     configuraSIGNALS();
+    bloquearSIGNALS();  //Bloqueo señales antes de crear hilos
 
 	if( serial_open(1,115200)!=0 )
 	{
-        printf("Error abriendo puerto serie\r\n");
+        perror("Error abriendo puerto serie\r\n");
         return -1;
 	}
 
 	pthread_t t1, t2;
 	pthread_create(&t1,  NULL, serial_thread, NULL);
 	pthread_create(&t2,  NULL, TCP_thread,    NULL);
+
+    desbloquearSIGNALS();  //Desbloqueo señales después de crear hilos
+
+    while(flagSIGINT==0)
+    {
+        sleep(0.1);
+    }
+    flagMain = 1;
 
     pthread_join(t1,NULL);
     pthread_join(t2,NULL);
@@ -115,4 +128,22 @@ void configuraSIGINT( void )
 void configuraSIGNALS( void )
 {
     configuraSIGINT();
+}
+
+void bloquearSIGNALS()
+{
+    sigset_t set;
+    //int s;
+    sigemptyset(&set);
+    sigaddset(&set,SIGINT);
+    pthread_sigmask(SIG_BLOCK, &set, NULL);
+}
+
+void desbloquearSIGNALS()
+{
+    sigset_t set;
+    //int s;
+    sigemptyset(&set);
+    sigaddset(&set,SIGINT);
+    pthread_sigmask(SIG_UNBLOCK, &set, NULL);
 }
