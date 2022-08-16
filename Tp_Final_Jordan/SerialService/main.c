@@ -1,5 +1,3 @@
-
-
 #include <stdio.h>
 #include <stdint.h>
 #include <sys/types.h>
@@ -18,10 +16,16 @@
 
 #define size 128
 
+typedef struct
+{
+    char buffer[size]; //COMPARTIDO EN AMBOS HILOS
+}Data;
+
+Data data;
+pthread_mutex_t mutexData = PTHREAD_MUTEX_INITIALIZER;
+
 volatile sig_atomic_t flagMain    = 0;
 
-
-char bufferRx[size];
 int cantBytes;
 int fd_com;  //file descriptor para comunicarse Cliente y Servidor
 void* serial_thread ( void* )
@@ -34,16 +38,18 @@ void* serial_thread ( void* )
 
     while(flagMain==0)
     {
-        cantBytes = serial_receive(bufferRx,size);
+        pthread_mutex_lock(&mutexData);
+        cantBytes = serial_receive(data.buffer,size);
         if(cantBytes>0 && cantBytes<255)
         {
-            printf("Recibí %d bytes: %s\r\n",cantBytes, bufferRx);
+            printf("Recibí %d bytes: %s\r\n",cantBytes, data.buffer);
             // Enviamos mensaje a cliente
-                if (write (fd_com, bufferRx, sizeof(bufferRx)) == -1)
-                {
-                    perror("Serial: error escribiendo mensaje en socket");
-                    exit (1);
-                }
+            if (write (fd_com, data.buffer, sizeof(data.buffer)) == -1)
+            {
+                perror("Serial: error escribiendo mensaje en socket");
+                exit (1);
+            }
+            pthread_mutex_unlock(&mutexData);
         }
         sleep(0.1);
     }
@@ -60,7 +66,7 @@ void* TCP_thread ( void* )
 	socklen_t addr_len;
 	struct sockaddr_in clientaddr;
 	struct sockaddr_in serveraddr;
-	char bufferTx[128];
+
 	int n;              //bytes recibidos del cliente
 
 	// Creamos socket de Internet (AF_INET), tipo Stream Socket (TCP)
@@ -124,13 +130,16 @@ void* TCP_thread ( void* )
         while(socketConectado==1 && flagMain==0)
         {
             // --------- Leemos Mensaje del Cliente -------- //
-            if( (n = read(fd_com,bufferTx,sizeof(bufferTx))) == -1 )
+            pthread_mutex_lock(&mutexData);
+            if( (n = read(fd_com,data.buffer,sizeof(data.buffer))) == -1 )
             {
                 perror("Error leyendo mensaje en socket");
                 exit(1);
             }
-            bufferTx[n]=0;
-            printf("Recibi %d bytes.:%s\n",n,bufferTx);
+            data.buffer[n]=0;
+            printf("Recibi %d bytes.:%s\n",n,data.buffer);
+            pthread_mutex_unlock(&mutexData);
+            //mutex unlock
             if(n==0) //Se desconectó el ciente (ojo, mejor SIGNAL)
             {
                 socketConectado = 0;
@@ -138,7 +147,9 @@ void* TCP_thread ( void* )
             }
             else
             {
-                serial_send(bufferTx,strlen(bufferTx));
+                pthread_mutex_lock(&mutexData);
+                serial_send(data.buffer,strlen(data.buffer));
+                pthread_mutex_unlock(&mutexData);
             }
         }
 		// Cerramos conexion con cliente
@@ -150,7 +161,7 @@ void* TCP_thread ( void* )
 	}
     // Cerramos conexion con cliente
     close(fd_com);
-    // Cerramos lector
+    // Cerramos lector de conexiones entrantes
     close(fd_listen);
     return NULL;
 }
