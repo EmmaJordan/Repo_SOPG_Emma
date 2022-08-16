@@ -154,7 +154,6 @@ void* TCP_thread ( void* )
                 serial_send(bufferTx,strlen(bufferTx));
             }
         }
-		printf("End while 2\r\n");
 		// Cerramos conexion con cliente
     	if(socketConectado==0)
     	{
@@ -162,7 +161,6 @@ void* TCP_thread ( void* )
             close(fd_com);
     	}
 	}
-	printf("End while 1\r\n");
     // Cerramos conexion con cliente
     close(fd_com);
     // Cerramos lector
@@ -189,13 +187,13 @@ int main(void)
     }
     flagMain = 1;
 
-    printf("flagMain = 1\n");
     printf("Esperando que termine hilo Serial...\n");
     pthread_join(t1,NULL);
+
     printf("Esperando que termine hilo TCP...\n");
     pthread_join(t2,NULL);
 
-	printf("Me voy, cierro el puerto serie\r\n");
+	printf("Cierro el puerto serie y salgo.\r\n");
     serial_close();
 	exit(EXIT_SUCCESS);
 	return 0;
