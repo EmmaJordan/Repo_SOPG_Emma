@@ -17,10 +17,11 @@
 #define size 128
 
 char bufferRx[size];
+char bufferTx[size];
 
 typedef struct
 {
-    char buffer[size]; //COMPARTIDO EN AMBOS HILOS
+    int socketConectado;
 }Data;
 
 Data data;
@@ -40,9 +41,7 @@ void* serial_thread ( void* )
 
     while(flagMain==0)
     {
-        //pthread_mutex_lock(&mutexData);
         cantBytes = serial_receive(bufferRx,size);
-        //cantBytes = serial_receive(data.buffer,sizeof(data.buffer));
         if(cantBytes>0 && cantBytes<255)
         {
             printf("Serial: recibí %d bytes: %s\r\n",cantBytes, bufferRx);
@@ -53,8 +52,7 @@ void* serial_thread ( void* )
                 exit (1);
             }
         }
-        //pthread_mutex_unlock(&mutexData);
-        sleep(0.1);
+        usleep(100);
     }
     printf("Serial: cierro el puerto serie\r\n");
     serial_close();
@@ -87,18 +85,17 @@ void* TCP_thread ( void* )
     serveraddr.sin_addr.s_addr = inet_addr("127.0.0.1");
     if(serveraddr.sin_addr.s_addr==INADDR_NONE)
     {
-        fprintf(stderr,"ERROR invalid server IP\r\n");
+        fprintf(stderr,"Server TCP: error, invalid server IP\r\n");
         exit(1);
     }
 
-    //setsockopt(fd_listen, SO_REUSEADDR); ¿?
 	// Abrimos puerto con bind(),
 	// Establece la DIRECCIÓN LOCAL del socket (IP+PUERTO)
 	// para saber a qué socket establecer dirección, se le envía su fd
 	if (bind(fd_listen, (struct sockaddr*)&serveraddr, sizeof(serveraddr)) == -1)
 	{
 		close(fd_listen);
-		perror("listener: bind");
+		perror("Server TCP: bind");
 		exit(1);
 	}
 
@@ -106,57 +103,59 @@ void* TCP_thread ( void* )
 	// listen() permite al socket escuchar conexiones entrantes
 	if (listen (fd_listen, 10) == -1) // backlog=10
   	{
-    	perror("error en listen");
+    	perror("Server TCP: error en listen");
     	exit(1);
   	}
 
   	//---------- Bucle TCP --------//
-  	int socketConectado = 0;
 	while(flagMain==0)
     {
 		addr_len = sizeof(struct sockaddr_in);
-		printf  ("Esperando aceptar nuevo cliente...\n");
+		printf  ("Server TCP: Esperando aceptar nuevo cliente...\n");
 
 		//Intento aceptar conexión de nuevo Cliente
-		socketConectado = 0;
+		pthread_mutex_lock(&mutexData);
+		data.socketConectado = 0;
+		pthread_mutex_unlock(&mutexData);
     	if ( (fd_com = accept(fd_listen, (struct sockaddr *)&clientaddr, &addr_len)) == -1)
       	{
-		      perror("error en accept");
+		      perror("Server TCP: error en accept:");
 		      exit(1);
 	    }
 	    else
 	    {
-            socketConectado = 1;
-            printf  ("server:  conexion desde:  %s\n", inet_ntoa(clientaddr.sin_addr));
+            pthread_mutex_lock(&mutexData);
+            data.socketConectado = 1;
+            pthread_mutex_unlock(&mutexData);
+            printf  ("Server TCP: conexion desde:  %s\n", inet_ntoa(clientaddr.sin_addr));
 	    }
 
-        while(socketConectado==1 && flagMain==0)
+        while(data.socketConectado==1 && flagMain==0)
         {
             // --------- Leemos Mensaje del Cliente -------- //
-            pthread_mutex_lock(&mutexData);
-            if( (n = read(fd_com,data.buffer,sizeof(data.buffer))) == -1 )
+            if( (n = read(fd_com,bufferTx,sizeof(bufferTx))) == -1 )
             {
-                perror("Error leyendo mensaje en socket");
+                perror("TCP: Error leyendo mensaje en socket");
                 exit(1);
             }
-            data.buffer[n]=0;
-            printf("Recibi %d bytes.:%s\n",n,data.buffer);
-            pthread_mutex_unlock(&mutexData);
-            //mutex unlock
+            bufferTx[n]=0;
+            printf("TCP: Recibi %d bytes.:%s\n",n,bufferTx);
+
             if(n==0) //Se desconectó el ciente (ojo, mejor SIGNAL)
             {
-                socketConectado = 0;
-                printf  ("Se desconectó el cliente :( \n");
+                pthread_mutex_lock(&mutexData);
+                data.socketConectado = 0;
+                pthread_mutex_unlock(&mutexData);
+                printf  ("TCP: Se desconectó el cliente!!\n");
             }
             else
             {
-                pthread_mutex_lock(&mutexData);
-                serial_send(data.buffer,strlen(data.buffer));
-                pthread_mutex_unlock(&mutexData);
+                serial_send(bufferTx,strlen(bufferTx));
             }
         }
+
 		// Cerramos conexion con cliente
-    	if(socketConectado==0)
+    	if(data.socketConectado==0)
     	{
             printf("Cierro conexion con cliente\r\n");
             close(fd_com);
@@ -192,6 +191,7 @@ int main(void)
     pthread_join(t1,NULL);
 
     printf("Esperando que termine hilo TCP...\n");
+    pthread_cancel(t2);
     pthread_join(t2,NULL);
 
 	exit(EXIT_SUCCESS);
