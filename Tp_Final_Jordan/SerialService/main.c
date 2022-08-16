@@ -36,10 +36,10 @@ void configuraSIGINT    ( void );
 void configuraSIGNALS   ( void );
 void bloquearSIGNALS    ( void );
 void desbloquearSIGNALS ( void );
-void configuraTCP       ( void );
 
 char bufferRx[size];
 int cantBytes;
+int fd_com;  //file descriptor para comunicarse Cliente y Servidor
 void* serial_thread ( void* )
 {
     if( serial_open(1,115200)!=0 )
@@ -54,6 +54,12 @@ void* serial_thread ( void* )
         if(cantBytes>0 && cantBytes<255)
         {
             printf("Recibí %d bytes: %s\r\n",cantBytes, bufferRx);
+            // Enviamos mensaje a cliente
+                if (write (fd_com, bufferRx, sizeof(bufferRx)) == -1)
+                {
+                    perror("Error escribiendo mensaje en socket");
+                    exit (1);
+                }
         }
         sleep(0.1);
     }
@@ -69,7 +75,6 @@ void* TCP_thread ( void* )
 	struct sockaddr_in clientaddr;
 	struct sockaddr_in serveraddr;
 	char bufferTx[128];
-	int fd_com;         //file descriptor para comunicarse con el Cliente
 	int n;              //bytes recibidos del cliente
 
 	// Creamos socket de Internet (AF_INET), tipo Stream Socket (TCP)
@@ -112,7 +117,7 @@ void* TCP_thread ( void* )
   	//---------- Bucle TCP --------//
   	int socketConectado = 0;
 	while(flagMain==0)
-	{
+    {
 		addr_len = sizeof(struct sockaddr_in);
 		printf  ("Esperando aceptar nuevo cliente...\n");
 
@@ -129,10 +134,10 @@ void* TCP_thread ( void* )
             printf  ("server:  conexion desde:  %s\n", inet_ntoa(clientaddr.sin_addr));
 	    }
 
-        while(socketConectado==1)
+        while(socketConectado==1 && flagMain==0)
         {
             // --------- Leemos Mensaje del Cliente -------- //
-            if( (n = read(fd_com,bufferTx,128)) == -1 )
+            if( (n = read(fd_com,bufferTx,sizeof(bufferTx))) == -1 )
             {
                 perror("Error leyendo mensaje en socket");
                 exit(1);
@@ -148,13 +153,20 @@ void* TCP_thread ( void* )
             {
                 serial_send(bufferTx,strlen(bufferTx));
             }
-
         }
-        // Cerramos lector
-    	close(fd_listen);
+		printf("End while 2\r\n");
 		// Cerramos conexion con cliente
-    	close(fd_com);
+    	if(socketConectado==0)
+    	{
+            printf("Cierro conexion con cliente\r\n");
+            close(fd_com);
+    	}
 	}
+	printf("End while 1\r\n");
+    // Cerramos conexion con cliente
+    close(fd_com);
+    // Cerramos lector
+    close(fd_listen);
     return NULL;
 }
 
@@ -177,7 +189,10 @@ int main(void)
     }
     flagMain = 1;
 
+    printf("flagMain = 1\n");
+    printf("Esperando que termine hilo Serial...\n");
     pthread_join(t1,NULL);
+    printf("Esperando que termine hilo TCP...\n");
     pthread_join(t2,NULL);
 
 	printf("Me voy, cierro el puerto serie\r\n");
@@ -235,9 +250,4 @@ void desbloquearSIGNALS()
         perror("Error creando máscara de bloqueo de hilos: ");
         exit(1);
     }
-}
-
-void configuraTCP (void)
-{
-    //
 }
