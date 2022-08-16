@@ -15,3 +15,38 @@
 
 1527537360 /home/emmanuel/Escritorio/SOPG/Repo_SOPG/Repo_SOPG_Emma/Tp_Final_Jordan/SerialService/SerialManager.h
 
+1660685345 source:/home/emmanuel/Escritorio/SOPG/Repo_SOPG/Repo_SOPG_Emma/Tp_Final_Jordan/SerialService/main.c
+	<stdio.h>
+	<stdint.h>
+	<sys/types.h>
+	<sys/socket.h>
+	<stdlib.h>
+	<errno.h>
+	<string.h>
+	<unistd.h>
+	<signal.h>
+	<pthread.h>
+	<netinet/in.h>
+	<arpa/inet.h>
+	<netdb.h>
+	"SerialManager.h"
+	"mySignals.h"
+
+1660685420 /home/emmanuel/Escritorio/SOPG/Repo_SOPG/Repo_SOPG_Emma/Tp_Final_Jordan/SerialService/mySignals.h
+	<stdio.h>
+	<stdint.h>
+	<sys/types.h>
+	<sys/socket.h>
+	<stdlib.h>
+	<errno.h>
+	<string.h>
+	<unistd.h>
+	<signal.h>
+	<pthread.h>
+	<netinet/in.h>
+	<arpa/inet.h>
+	<netdb.h>
+
+1660685420 source:/home/emmanuel/Escritorio/SOPG/Repo_SOPG/Repo_SOPG_Emma/Tp_Final_Jordan/SerialService/mySignals.c
+	"mySignals.h"
+
