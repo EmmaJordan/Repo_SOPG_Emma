@@ -136,7 +136,11 @@ void bloquearSIGNALS()
     //int s;
     sigemptyset(&set);
     sigaddset(&set,SIGINT);
-    pthread_sigmask(SIG_BLOCK, &set, NULL);
+    if ( pthread_sigmask(SIG_BLOCK, &set, NULL) == -1 );
+    {
+        perror("Error creando máscara de bloqueo de hilos: ");
+        return 1;
+    }
 }
 
 void desbloquearSIGNALS()
@@ -145,5 +149,9 @@ void desbloquearSIGNALS()
     //int s;
     sigemptyset(&set);
     sigaddset(&set,SIGINT);
-    pthread_sigmask(SIG_UNBLOCK, &set, NULL);
+    if ( pthread_sigmask(SIG_UNBLOCK, &set, NULL) == -1 );
+    {
+        perror("Error creando máscara de bloqueo de hilos: ");
+        return 1;
+    }
 }
