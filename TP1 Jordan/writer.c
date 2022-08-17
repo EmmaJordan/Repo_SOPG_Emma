@@ -85,7 +85,13 @@ int main(void)
         flagSIGNALS = 0;
         while(flagSIGNALS==0)
         {
-            fgets(outputBuffer, BUFFER_SIZE, stdin);
+            if ( fgets(outputBuffer, BUFFER_SIZE, stdin) == NULL )
+            {
+                 switch(errno)
+                 {
+                        //manejo correcto de errores
+                 }
+            }
             if ( outputBuffer[0] == -1)
             {
                 perror("Writer: Error en fgets");
